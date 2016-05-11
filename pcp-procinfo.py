@@ -14,7 +14,8 @@ class TotalRead():
         self.opts.pmSetLongOptionHelp()
     def execute(self):
         if self.context:
-            metrics = ('proc.psinfo.pid',)
+            # Use a different metric to demonstrate as its easier to see whats going on
+            metrics = ('proc.psinfo.threads',)
             pmids = self.context.pmLookupName(metrics)
             # print "PMID: ",pmids
             descs = self.context.pmLookupDescs(pmids)
@@ -27,22 +28,18 @@ class TotalRead():
             num_inst = result.contents.get_numval(0)
             print "no of inst: ",num_inst
             print "Inst domain: ",descs[0].contents.indom
-            pidlist,namelist = self.context.pmGetInDom(descs[0])	 
-            
-            ''' Print pid and the process name without using pmResult'''
-            for i in range(len(pidlist)):
-            	print pidlist[i],"  ",namelist[i]
-            	
-            print "======================================================="
-            
+            internal_instance_ids,namelist = self.context.pmGetInDom(descs[0])
+
             ''' Print pids using the pmResult '''
             for i in range(num_inst):
-		        atom = self.context.pmExtractValue(
+                atom = self.context.pmExtractValue(
 		                result.contents.get_valfmt(0),
 		                result.contents.get_vlist(0,i),
 		                descs[0].contents.type,
 		                PM_TYPE_U32)
-		        print "PID: ",atom.ul
+                external_name_offset = internal_instance_ids.index(result.contents.get_inst(0,i))
+                external_name = namelist[external_name_offset]
+                print "Threads: ",atom.ul, "Instance: ", external_name
             self.context.pmFreeResult(result)
 
     def connect(self):
