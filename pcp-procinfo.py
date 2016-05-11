@@ -15,31 +15,38 @@ class TotalRead():
     def execute(self):
         if self.context:
             # Use a different metric to demonstrate as its easier to see whats going on
-            metrics = ('proc.psinfo.threads',)
+            metrics = ('proc.psinfo.pid',)
             pmids = self.context.pmLookupName(metrics)
             # print "PMID: ",pmids
             descs = self.context.pmLookupDescs(pmids)
             # print "Desc: ",descs
             result = self.context.pmFetch(pmids)
-            print "type of result: ",type(result)
             if result.contents.numpmid != len(metrics):
                 print "Got error here"
                 raise pmapi.pmErr(PM_ERR_VALUE)
             num_inst = result.contents.get_numval(0)
-            print "no of inst: ",num_inst
-            print "Inst domain: ",descs[0].contents.indom
-            internal_instance_ids,namelist = self.context.pmGetInDom(descs[0])
+            print "no of instances: ",num_inst
+            # print "Inst domain: ",descs[0].contents.indom
+            ''' Get external_names '''
+            internal_instance_ids,external_names = self.context.pmGetInDom(descs[0])
 
-            ''' Print pids using the pmResult '''
+            ''' Get values (pids) from the pmResult '''
+            print "PID\t\t\tName"
             for i in range(num_inst):
                 atom = self.context.pmExtractValue(
 		                result.contents.get_valfmt(0),
 		                result.contents.get_vlist(0,i),
 		                descs[0].contents.type,
 		                PM_TYPE_U32)
-                external_name_offset = internal_instance_ids.index(result.contents.get_inst(0,i))
-                external_name = namelist[external_name_offset]
-                print "Threads: ",atom.ul, "Instance: ", external_name
+                # external_name_offset = internal_instance_ids.index(result.contents.get_inst(0,i))
+                # external_name = namelist[external_name_offset]
+                external_name = external_names[i]
+                ''' Strip options from the external_name, a space followed by a - can be considered an option'''
+                strip_options_index = external_name.find(" -")
+                if strip_options_index > 0:
+                    print atom.ul, "\t\t", external_name[:strip_options_index]
+                else:
+                    print atom.ul, "\t\t", external_name
             self.context.pmFreeResult(result)
 
     def connect(self):
