@@ -41,6 +41,19 @@ class TotalRead():
                 # external_name_offset = internal_instance_ids.index(result.contents.get_inst(0,i))
                 # external_name = namelist[external_name_offset]
                 external_name = external_names[i]
+
+                # ^ Although the above works in this case, it assumes the result (from pmFetch) instances are in the same
+                # order as the those in the call to pmGetInDom. This can't safely be assumed. You will have to lookup
+                # the external name from the internal instance ids
+
+                # Do it like we did before:
+                external_name_offset = internal_instance_ids.index(result.contents.get_inst(0,i))
+                external_name = external_names[external_name_offset]
+
+                # Or lookup with pmNameInDom(pmdesc, internal_instance_id)
+                external_name = self.context.pmNameInDom(descs[0], result.contents.get_inst(0,i))
+
+
                 ''' Strip options from the external_name, a space followed by a - can be considered an option'''
                 strip_options_index = external_name.find(" -")
                 if strip_options_index > 0:
