@@ -16,29 +16,33 @@ class ProcInfo():
     def connect(self):
         self.fg = pmapi.fetchgroup(cpmapi.PM_CONTEXT_HOST,"local:")
         ''' for cpuinfo getting information not available error'''
-        self.cpuinfo = self.fg.extend_indom('kernel.percpu.cpu.user', scale='second/second')
+        self.cpuinfo = self.fg.extend_indom('kernel.percpu.cpu.user')
         ''' for pids getting error result size exceeded '''
-        self.pids = self.fg.extend_indom('proc.psinfo.pid')
+        self.pids = self.fg.extend_indom('proc.psinfo.pid',maxnum=1000)
         self.tv = self.fg.extend_timestamp()
     def execute(self):
         print "in connect"
         self.fg.fetch()
+        self.fg.fetch()         # if there is a metric which requires rate conversion then it needs at least two fetch operations
+        # self.fg.fetch()
         print "Timestamp: ",self.tv()       #works fine
-        #till this point everything works fine
 
-        # print "CPUID\t\tCPUNAME\t\tValue"
-        # for (cpuid,cpuname,value) in self.cpuinfo():
-        #     try:
-        #         print(' %d \t\t %s' % (cpuid,cpuname))
-        #         # print "value: ",value()           #here is the problem
-        #
-        #     except pmapi.pmErr as e:
-        #         print "Error ",e.message()
+        print "CPUID\t\tCPUNAME\t\tValue"
+        for (cpuid,cpuname,value) in self.cpuinfo():
+            try:
+                print(' %d \t\t %s \t\t%f' % (cpuid,cpuname,value()))
+            except pmapi.pmErr as e:
+                print "Error ",e.message()
 
+        print "====================================================="
 
+        print "PID\t\t\tNAME"
         for pid,pidname,value in self.pids():
             try:
-                print "PID: ",pid       #Here getting result size exceeded
+                strip_index = pidname.find(" -")
+                if strip_index > 0:
+                    pidname = pidname[:strip_index]
+                print('%d\t\t%s'%(value(),pidname))
             except:
                 pass
 
